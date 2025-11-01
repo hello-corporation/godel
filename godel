@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+
+"""
+The 46 formulas in Godel's 1931 paper.
+"""
+
+def Eps(max, pred):
+    """ Gödel's name for what eventually becomes the μ operator. """
+    y = 0
+    while y <= max:
+        if pred(y):
+            return y
+        y += 1
+    else:
+        return 0
+
+def Div(x, y):
+    """ 1. x is divisible by y. """
+    z = 0
+    while z <= x:
+        if x == y*z:
+            return True
+        z += 1
+    return False
+
+assert Div(8, 2) == True
+assert Div(7, 2) == False
+assert Div(5**3, 5**2) == True
+assert Div(5**2, 5**3) == False
+
+def Prim(x):
+    """ 2. x is a prime number. """
+    if not (x > 1):
+        return False
+    z = 0
+    while z <= x:
+        if z != 1 and z != x and Div(x, z):
+            return False
+        z += 1
+    return True
+
+assert Prim(1) == False
+assert Prim(2) == True
+assert Prim(3) == True
+assert Prim(4) == False
+assert Prim(5) == True
+assert Prim(7) == True
+assert Prim(9) == False
+
+def nPrx(n, x):
+    """ 3. nPrx is the nth (in order of magnitude) prime number contained in x. """
+    if n == 0:
+        return 0
+    prev = nPrx(n-1, x)
+    pred = lambda y: Prim(y) and Div(x, y) and y > prev
+    return Eps(x, pred)
+
+assert nPrx(0, 2*(3**2)*7*11) == 0
+assert nPrx(1, 2*(3**2)*7*11) == 2
+assert nPrx(2, 2*(3**2)*7*11) == 3
+assert nPrx(3, 2*(3**2)*7*11) == 7
+assert nPrx(4, 2*(3**2)*7*11) == 11
+
+def Fac(n):
+    """ 4. Factorial. """
+    if n == 0:
+        return 1
+    return n*Fac(n-1)
+
+def Pr(n):
+    """ 5. Pr(n) is the n-th prime number (in order of magnitude). """
+    if n == 0:
+        return 0
+    return Eps(max=Fac(Pr(n-1)) + 1, pred=lambda y: Prim(y) and y > Pr(n-1))
+
+assert Pr(1) == 2
+assert Pr(2) == 3
+assert Pr(3) == 5
+assert Pr(4) == 7
+assert Pr(5) == 11
+assert Pr(6) == 13
+
