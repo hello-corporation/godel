@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+
+# UTF-8 from scratch, no imports
+
+def utf8_len_from_codepoint(cp: int) -> int:
+    """
+    Determine UTF-8 length from the Unicode code point using bit shifts.
+    0xxxxxxx                              -> 1 byte  (cp >> 7  == 0)
+    110xxxxx 10xxxxxx                     -> 2 bytes (cp >> 11 == 0)
+    1110xxxx 10xxxxxx 10xxxxxx            -> 3 bytes (cp >> 16 == 0)
+    11110xxx 10xxxxxx 10xxxxxx 10xxxxxx   -> 4 bytes (cp >> 21 == 0)
+    """
+    if cp < 0 or cp > 0x10FFFF:
+        raise ValueError(f"Invalid Unicode code point: U+{cp:04X}")
+    if cp >> 7 == 0:
+        return 1
+    elif cp >> 11 == 0:
+        return 2
+    elif cp >> 16 == 0:
+        return 3
+    elif cp >> 21 == 0:
+        return 4
+    else:
+        # > 21 bits would exceed UTF-8's 4-byte range
+        raise ValueError(f"Code point out of range for UTF-8: U+{cp:04X}")
+
+
+def encode_utf8_char(c: str) -> list:
+    """
+    Encode a single Unicode character to a list of UTF-8 bytes (ints 0..255)
+    using only bit operations. Raises on surrogate halves.
+    """
+    if not c:
+        raise ValueError("Empty character")
+    cp = ord(c)
+
+    # Reject surrogates explicitly (not valid Unicode scalar values)
+    if 0xD800 <= cp <= 0xDFFF:
+        raise ValueError(f"Invalid surrogate code point: U+{cp:04X}")
+
+    n = utf8_len_from_codepoint(cp)
+
+    if n == 1:
+        return [cp]  # 0xxxxxxx
+    elif n == 2:
+        # 110xxxxx 10xxxxxx
+        b1 = 0b11000000 | (cp >> 6)
+        b2 = 0b10000000 | (cp & 0b00111111)
+        return [b1 & 0xFF, b2 & 0xFF]
+    elif n == 3:
+        # 1110xxxx 10xxxxxx 10xxxxxx
+        b1 = 0b11100000 | (cp >> 12)
+        b2 = 0b10000000 | ((cp >> 6) & 0b00111111)
+        b3 = 0b10000000 | (cp & 0b00111111)
+        return [b1 & 0xFF, b2 & 0xFF, b3 & 0xFF]
+    else:
+        # n == 4
+        # 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+        b1 = 0b11110000 | (cp >> 18)
+        b2 = 0b10000000 | ((cp >> 12) & 0b00111111)
+        b3 = 0b10000000 | ((cp >> 6) & 0b00111111)
+        b4 = 0b10000000 | (cp & 0b00111111)
+        return [b1 & 0xFF, b2 & 0xFF, b3 & 0xFF, b4 & 0xFF]
+
+
+def string_to_utf8_int(s: str) -> int:
+    """
+    Treat the UTF-8 encoding of `s` as a base-256 big-endian number
+    and return it as an integer. For example, bytes [0x41, 0x42] -> 0x4142.
+    """
+    acc = 0
+    for ch in s:
+        for b in encode_utf8_char(ch):
+            acc = (acc << 8) | (b & 0xFF)
+    return acc
+
+
+def nth_char_utf8_bytes_int(s: str, n: int) -> int:
+    """
+    Take the n-th character (0-based) of s, encode it as UTF-8 using
+    raw bit ops, and return the big-endian integer formed by its bytes.
+    Example: 'é' -> bytes [0xC3, 0xA9] -> integer 0xC3A9 (decimal 50089).
+    """
+    if n < 0 or n >= len(s):
+        raise IndexError("n out of range")
+    bs = encode_utf8_char(s[n])
+    acc = 0
+    for b in bs:
+        acc = (acc << 8) | (b & 0xFF)
+    return acc
+
+
+
+if __name__ == "__main__":
+
+
+    # 0x41
+    print(hex(string_to_utf8_int("A")))
+
+    # 0x4869
+    print(hex(string_to_utf8_int("Hi")))
+
+    # 0xC3A9
+    print(hex(string_to_utf8_int("é")))
+
+    # 0xE6BCA2
+    print(hex(string_to_utf8_int("漢")))
+
+    # 0xF09F9880
+    print(hex(string_to_utf8_int("😀")))
+
+    # n-th char packing
+    s = "Aé漢😀"
+    for i in range(len(s)):
+        print(i, s[i], nth_char_utf8_bytes_int(s, i))
+
