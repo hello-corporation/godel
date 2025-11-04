@@ -4,6 +4,24 @@
 The 46 formulas in Godel's 1931 paper.
 """
 
+# Godel numbering for individual symbols,
+# not counting variables, which will be
+# represented as various powers of primes
+# bigger than 13, as in the original paper.
+
+Ord = {
+    '0': 1,
+    'f': 3,
+    '~': 5,
+    '∨': 7,
+    'Π': 9,
+    '(': 11,
+    ')': 13,
+}
+
+Chr = {v:k for k,v in Ord.items()}
+
+
 def Eps(max, pred):
     """ Gödel's name for what eventually becomes the μ operator. """
     y = 0
@@ -13,6 +31,10 @@ def Eps(max, pred):
         y += 1
     else:
         return 0
+
+############################
+### Begin implementation ###
+############################
 
 def Div(x, y):
     """ 1. x is divisible by y. """
@@ -66,6 +88,12 @@ def Fac(n):
     if n == 0:
         return 1
     return n*Fac(n-1)
+
+assert Fac(0) == 1
+assert Fac(1) == 1
+assert Fac(2) == 2
+assert Fac(3) == 6
+assert Fac(4) == 24
 
 def Pr(n):
     """ 5. Pr(n) is the n-th prime number (in order of magnitude). """
