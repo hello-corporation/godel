@@ -42,8 +42,6 @@ def and_godel_said(f):
 
     return f_with_memory
 
-and_godel_said = lambda x: x
-
 # ========================================================
 
 
@@ -220,9 +218,11 @@ assert l(2**5) == 1         # 2**5 is the singleton list [5]
 def join_helper_1(x, y, z):
     return all(nGlx(n, z) == nGlx(n, x) for n in range(l(x) + 1))
 
+
 @but_godel_never_said
 def join_helper_2(x, y, z):
     return all(nGlx(n + l(x), z) == nGlx(n, y) for n in range(1, l(y) + 1))
+
 
 @but_godel_never_said
 def make_join_predicate(x, y):
@@ -230,6 +230,7 @@ def make_join_predicate(x, y):
     def pred(z):
         return join_helper_1(x, y, z) and join_helper_2(x, y, z)
     return pred
+
 
 @and_godel_said
 def join(x, y):
@@ -241,6 +242,7 @@ def join(x, y):
     join_predicate = make_join_predicate(x, y)
 
     return Eps(max, join_predicate)
+
 
 a = 2                       # [1]
 b = 2*3                     # [1,1]
@@ -339,6 +341,29 @@ def E(x):
 ###                          ###
 ### Even with all the caches ###
 ################################
+
+
+### ======================================================================
+###
+### NEXT TIME: Get the stuff below working!
+###
+### It seems semantically correct, just crazy slow.
+###
+### The problem is *clearly* the brute-force implementation of `join`
+###
+### At this point, we have to decouple from Gödel's paper,
+### and implement something better...
+###
+###
+###
+### ======================================================================
+
+# Next Step: Get this working
+#
+# a = R(2)                      # a = [2]
+# Ea = E(a)                     # Ea = '(' + str(a) + ')', conceptually
+# assert l(E(a)) == l(a) + 2    # the extra 2 comes from the '(' and ')'
+
 
 #a = R(2)                    # a = [2]
 #b = R(3)                    # b = [3]
