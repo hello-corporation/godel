@@ -1,26 +1,61 @@
 #!/usr/bin/env python
 
 """
-The 46 formulas in Godel's 1931 paper.
+The 46 formulas in Gödel's 1931 paper.
 """
 
-# Godel numbering for individual symbols,
-# not counting variables, which will be
-# represented as various powers of primes
-# bigger than 13, as in the original paper.
+# ========================================================
 
-Ord = {
-    '0': 1,
-    'f': 3,
-    '~': 5,
-    '∨': 7,
-    'Π': 9,
-    '(': 11,
-    ')': 13,
+
+def and_godel_said(f):
+
+    """
+        Not in Gödel's paper.
+
+        We'll use this function to remember the results
+        of computations we've done already, because
+        otherwise things start to seriously slow down
+        by somewhere around equation 10. 
+    """
+
+    memory = {}
+
+    def f_with_memory(*args):
+
+        if args in memory:
+            return memory[args]
+
+        result = f(*args)
+
+        memory[args] = result
+
+        return result
+
+    # read some attributes from the original function f,
+    # like its name and docstring, and slap those onto
+    # the function f_with_memory so its more convincing
+    # in its attempt to look like f, even though it's not.
+    attrs_to_steal = ('__name__', '__doc__')
+
+    for attr in attrs_to_steal:
+        setattr(f_with_memory, attr, getattr(f, attr))
+
+    return f_with_memory
+
+and_godel_said = lambda x: x
+
+# ========================================================
+
+
+godel = {
+    '0': 1,     # 0 is just 0, but Godel encodes it as 1
+    'f': 3,     # f(n) is successor of n (i.e., n+1), in Godel's notation
+    '~': 5,     # ~ is logical 'not'
+    'v': 7,     # logical 'or'. we'll use ascii v rather than unicode ∨ (b/c c'mon)
+    'Π': 9,     # 'for all' in Godel's notation. (c'mon get a greek keyboard)
+    '(': 11,    # left parenthesis
+    ')': 13,    # right parenthesis
 }
-
-Chr = {v:k for k,v in Ord.items()}
-
 
 def Eps(max, pred):
     """ Gödel's name for what eventually becomes the μ operator. """
@@ -32,10 +67,17 @@ def Eps(max, pred):
     else:
         return 0
 
-############################
-### Begin implementation ###
-############################
 
+# ========================================================
+
+######################################################
+### Gödel's 46 famous functions leading from basic ###
+### divisibility all the way up to the provability ###
+### of the proposition encoded by a given positive ###
+### integer begin here. May God (El) show us mercy ###
+######################################################
+
+@and_godel_said
 def Div(x, y):
     """ 1. x is divisible by y. """
     z = 0
@@ -50,6 +92,9 @@ assert Div(7, 2) == False
 assert Div(5**3, 5**2) == True
 assert Div(5**2, 5**3) == False
 
+# ========================================================
+
+@and_godel_said
 def Prim(x):
     """ 2. x is a prime number. """
     if not (x > 1):
@@ -69,12 +114,14 @@ assert Prim(5) == True
 assert Prim(7) == True
 assert Prim(9) == False
 
+# ========================================================
+
+@and_godel_said
 def nPrx(n, x):
     """ 3. nPrx is the nth (in order of magnitude) prime number contained in x. """
     if n == 0:
         return 0
-    prev = nPrx(n-1, x)
-    pred = lambda y: Prim(y) and Div(x, y) and y > prev
+    pred = lambda y: Prim(y) and Div(x, y) and y > nPrx(n-1, x)
     return Eps(x, pred)
 
 assert nPrx(0, 2*(3**2)*7*11) == 0
@@ -83,6 +130,9 @@ assert nPrx(2, 2*(3**2)*7*11) == 3
 assert nPrx(3, 2*(3**2)*7*11) == 7
 assert nPrx(4, 2*(3**2)*7*11) == 11
 
+# ========================================================
+
+@and_godel_said
 def Fac(n):
     """ 4. Factorial. """
     if n == 0:
@@ -95,6 +145,9 @@ assert Fac(2) == 2
 assert Fac(3) == 6
 assert Fac(4) == 24
 
+# ========================================================
+
+@and_godel_said
 def Pr(n):
     """ 5. Pr(n) is the n-th prime number (in order of magnitude). """
     if n == 0:
@@ -107,4 +160,194 @@ assert Pr(3) == 5
 assert Pr(4) == 7
 assert Pr(5) == 11
 assert Pr(6) == 13
+
+# ========================================================
+
+but_godel_never_said = and_godel_said
+
+@but_godel_never_said
+def x_of_n_leq_y(n, x, y):
+    # Helper function for nGlx below.
+    # Not in Gödel's original paper.
+    return Div(x, nPrx(n, x)**y)
+
+@but_godel_never_said
+def x_of_n_eq_y(n, x, y):
+    # Helper function for nGlx below.
+    # Not in Gödel's original paper.
+    return x_of_n_leq_y(n, x, y) and not x_of_n_leq_y(n, x, y+1)
+
+@and_godel_said
+def nGlx(n, x):
+    """ 6. nGlx is the nth term of the series of numbers assigned to x. """
+    # Note: this is essentially x[n], thinking of x as a list of numbers,
+    # and n as the index into that list. e.g., x = (2**3) * (3**2) * (5**1)
+    # represents the list [3, 2, 1] so we should have:
+    # x[1] == 3
+    # x[2] == 2
+    # x[3] == 1
+    # (Note: Gödel's definition is indexing the "list" starting a 1, not 0)
+    #
+    # Substitute in the definition of x_of_n_eq_y above to get the
+    # symbol by symbol definition of nGlx in Gödel's paper.
+    # We're breaking this out into three top-level functions
+    # so that we can cache as many things as possible.
+    pred = lambda y: x_of_n_eq_y(n, x, y)
+    return Eps(x, pred)
+
+# x = (2**3) * (3**2) * (5**1) encodes the list [3, 2, 1]
+x = x = (2**3) * (3**2) * (5**1) 
+assert nGlx(1, x) == 3
+assert nGlx(2, x) == 2
+assert nGlx(3, x) == 1
+assert nGlx(4, x) == 0
+
+# ========================================================
+
+@and_godel_said
+def l(x):
+    """ 7. l(x) is the length of the series of numbers assigned to x. """
+    pred = lambda y: (nPrx(y, x) > 0) and (nPrx(y+1, x) == 0)
+    return Eps(x, pred)
+
+assert l(2*3*5) == 3        # the length of [1, 1, 1] is 3    
+assert l(1) == 0            # 1 encodes the empty series
+assert l(2**5) == 1         # 2**5 is the singleton list [5]
+
+# ========================================================
+
+@but_godel_never_said
+def join_helper_1(x, y, z):
+    return all(nGlx(n, z) == nGlx(n, x) for n in range(l(x) + 1))
+
+@but_godel_never_said
+def join_helper_2(x, y, z):
+    return all(nGlx(n + l(x), z) == nGlx(n, y) for n in range(1, l(y) + 1))
+
+@but_godel_never_said
+def make_join_predicate(x, y):
+    @but_godel_never_said
+    def pred(z):
+        return join_helper_1(x, y, z) and join_helper_2(x, y, z)
+    return pred
+
+@and_godel_said
+def join(x, y):
+
+    """ 8. join(x, y) corresponds to "joining together" two finite series of numbers. """
+
+    max = Pr(l(x) + l(y))**(x+y)
+
+    join_predicate = make_join_predicate(x, y)
+
+    return Eps(max, join_predicate)
+
+a = 2                       # [1]
+b = 2*3                     # [1,1]
+c = 2*3*5                   # [1,1,1]
+assert join(a, b) == c
+
+a = 2*3                     # [1,1]
+b = 5                       # [1]
+c = 2*3*5                   # [1,1,1]
+assert join(a, b) == c
+
+a = (2**3)*(3**2)           # [3,2]
+b = (2**1)                  # [1]
+c = (2**3)*(3**2)*(5**1)    # [3,2,1]
+assert join(a, b) == c
+
+a = (2**3)                  # [3]
+b = (2**2)*(3**1)           # [2,1]
+c = (2**3)*(3**2)*(5**1)    # [3,2,1]
+assert join(a, b) == c
+
+
+# ========================================================
+
+@and_godel_said
+def R(x):
+    """ 9. R(x) corresponds to the number-series consisting
+           only of the number x (for x > 0). """
+    return 2**x
+
+
+a = R(2)                    # a = [2]
+b = R(3)                    # b = [3]
+c = join(a, b)              # c = join(a,b)
+assert l(c) == 2            # len(c) == 2
+assert nGlx(1, c) == 2      # c[1] == 2
+assert nGlx(2, c) == 3      # c[2] == 3
+
+
+# ========================================================
+
+@and_godel_said
+def E(x):
+    """ 10. E(x) corresponds to the operation of 'bracketing'. """
+    lp = godel['(']         # written 11, in Gödel's paper
+    rp = godel[')']         # written 13, in Gödel's paper
+    R11  = R(lp)            # compute the left-most term
+    R13  = R(rp)            # compute the right-most term
+    R11x = join(R11, x)     # compute the join "R(11) * x"
+    return join(R11x, R13)  # compute "(R(11) * x) * R(13)"
+
+
+# Now, the simplest test of above function might
+# be something like this:
+#
+# a = R(2)                      # a = [2]
+# Ea = E(a)                     # Ea = '(' + str(a) + ')', conceptually
+# assert l(E(a)) == l(a) + 2    # the extra 2 comes from the '(' and ')'
+#
+# If we run that test, however, we find that it hangs.
+#
+# Let's step through the code.
+
+"""
+>>> a = R(2)
+>>> a
+4
+
+>>> # E(4) == ?
+>>> # The function hangs if we call it,
+>>> # so let's step through it manually.
+
+>>> lp = godel['(']         # written 11, in Gödel's paper
+>>> rp = godel[')']         # written 13, in Gödel's paper
+
+>>> lp
+11
+
+>>> rp
+13
+
+>>> R11 = R(lp)             # compute the left-most term
+>>> R13 = R(rp)             # compute the right-most term
+
+>>> R11
+2048
+
+>>> R13
+8192
+
+>>> R11x = join(R11, x)     # this is where the function hangs
+"""
+
+################################
+### Time: Still computing... ###
+###                          ###
+### Even with all the caches ###
+################################
+
+#a = R(2)                    # a = [2]
+#b = R(3)                    # b = [3]
+#c = join(a, b)              # c = join(a,b)
+#Ec = E(c)                   # Ec = '(' + str(c) + ')', conceptually
+#assert l(E(c)) == l(c) + 2  # the extra 2 comes from the '(' and ')'
+
+#assert nGlx(1, E_ab) == godel['(']
+#assert nGlx(2, E_ab) == nGlx(1, ab)
+#assert nGlx(3, E_ab) == nGlx(2, ab)
+#assert nGlx(4, E_ab) == 13
 
