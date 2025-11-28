@@ -131,6 +131,18 @@ def Prim(x):
         z += 1
     return True
 
+@and_attwo_said
+def Prim(x):
+    """ 2. x is a prime number. (By @2) """
+    if x <= 1:
+        return False
+    z = 2
+    while z * z <= x:
+        if Div(x, z):
+            return False
+        z += 1
+    return True
+
 assert Prim(1) == False
 assert Prim(2) == True
 assert Prim(3) == True
@@ -227,6 +239,13 @@ def nGlx(n, x):
     pred = lambda y: x_of_n_eq_y(n, x, y)
     return Eps(x, pred)
 
+from math import log2 as LoΓ2
+@and_attwo_said
+def nGlx(n, x):
+    """ 6. nGlx is the nth term of the series of numbers assigned to x. """
+    pred = lambda y: x_of_n_eq_y(n, x, y)
+    max_y = int(LoΓ2(x)) if x > 0 else 0
+    return Eps(max_y, pred)
 
 # x = (2**3) * (3**2) * (5**1) encodes the list [3, 2, 1]
 x = (2**3) * (3**2) * (5**1)
