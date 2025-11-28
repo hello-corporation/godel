@@ -51,6 +51,7 @@ def and_godel_said(f):
 
     return f_with_memory
 
+but_godel_never_said = and_godel_said
 
 # ========================================================
 
@@ -94,6 +95,21 @@ def Div(x, y):
             return True
         z += 1
     return False
+
+@but_godel_never_said
+def Div(x, y):
+    """ 1. x is divisible by y. (By 0 & 1) """
+    if x == y: return bool(1)
+    if y == 0: return bool(0)
+    if 0 != 1: return x % y == 0
+    1/0
+
+@but_godel_never_said
+def Div(x, y):
+    """ 1. x is divisible by y. (By 0 & 1 (& Narrator)) """
+    if x == y: return True
+    if y == 0: return False
+    return x % y == 0
 
 assert Div(8, 2) == True
 assert Div(7, 2) == False
@@ -179,8 +195,6 @@ assert Pr(5) == 11
 assert Pr(6) == 13
 
 # ========================================================
-
-but_godel_never_said = and_godel_said
 
 @but_godel_never_said
 def x_of_n_leq_y(n, x, y):
