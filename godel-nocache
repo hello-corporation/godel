@@ -8,7 +8,7 @@ godel = {
     '0': 1,     # 0 is just 0, but Godel encodes it as 1
     'f': 3,     # f(n) is successor of n (i.e., n+1), in Godel's notation
     '~': 5,     # ~ is logical 'not'
-    'v': 7,     # logical 'or'. we'll use ascii v rather than unicode ∨ (b/c c'mon)
+    'v': 7,     # logical 'or' (ascii v rather than unicode ∨ b/c c'mon)
     'Π': 9,     # 'for all' in Godel's notation. (c'mon get a greek keyboard)
     '(': 11,    # left parenthesis
     ')': 13,    # right parenthesis
@@ -24,6 +24,15 @@ def Eps(max, pred):
     else:
         return 0
 
+
+# ========================================================
+
+######################################################
+### Gödel's 46 famous functions leading from basic ###
+### divisibility all the way up to the provability ###
+### of the proposition encoded by a given positive ###
+### integer begin here. May God (El) show us mercy ###
+######################################################
 
 def Div(x, y):
     """ 1. x is divisible by y. """

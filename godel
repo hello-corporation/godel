@@ -6,6 +6,7 @@ The 46 formulas in Gödel's 1931 paper.
 
 # ========================================================
 
+CALLS = {}
 
 def and_godel_said(f):
 
@@ -25,7 +26,15 @@ def and_godel_said(f):
         if args in memory:
             return memory[args]
 
+        argv = ', '.join(map(str, args))
+        print(f"{f.__name__}({argv})")
+
+        import time
+        before = time.time()
         result = f(*args)
+        after = time.time()
+
+        CALLS.setdefault(f.__name__, []).append(after-before)
 
         memory[args] = result
 
@@ -35,12 +44,13 @@ def and_godel_said(f):
     # like its name and docstring, and slap those onto
     # the function f_with_memory so its more convincing
     # in its attempt to look like f, even though it's not.
-    attrs_to_steal = ('__name__', '__doc__')
+    attrs_to_steal = ('__name__', '__qualname__', '__doc__')
 
     for attr in attrs_to_steal:
         setattr(f_with_memory, attr, getattr(f, attr))
 
     return f_with_memory
+
 
 # ========================================================
 
@@ -49,7 +59,7 @@ godel = {
     '0': 1,     # 0 is just 0, but Godel encodes it as 1
     'f': 3,     # f(n) is successor of n (i.e., n+1), in Godel's notation
     '~': 5,     # ~ is logical 'not'
-    'v': 7,     # logical 'or'. we'll use ascii v rather than unicode ∨ (b/c c'mon)
+    'v': 7,     # logical 'or' (ascii v rather than unicode ∨ b/c c'mon)
     'Π': 9,     # 'for all' in Godel's notation. (c'mon get a greek keyboard)
     '(': 11,    # left parenthesis
     ')': 13,    # right parenthesis
@@ -115,12 +125,21 @@ assert Prim(9) == False
 # ========================================================
 
 @and_godel_said
+def make_nPrx_helper(n, x):
+    @and_godel_said
+    def nPrx_helper(y):
+        return Prim(y) and Div(x, y) and y > nPrx(n-1, x)
+    return nPrx_helper
+
+@and_godel_said
 def nPrx(n, x):
-    """ 3. nPrx is the nth (in order of magnitude) prime number contained in x. """
+    """ 3. nPrx is the nth (in order of magnitude)
+           prime number contained in x.
+    """
     if n == 0:
         return 0
-    pred = lambda y: Prim(y) and Div(x, y) and y > nPrx(n-1, x)
-    return Eps(x, pred)
+    nPrx_helper = make_nPrx_helper(n, x)
+    return Eps(x, nPrx_helper)
 
 assert nPrx(0, 2*(3**2)*7*11) == 0
 assert nPrx(1, 2*(3**2)*7*11) == 2
@@ -194,7 +213,7 @@ def nGlx(n, x):
     return Eps(x, pred)
 
 # x = (2**3) * (3**2) * (5**1) encodes the list [3, 2, 1]
-x = x = (2**3) * (3**2) * (5**1) 
+x = (2**3) * (3**2) * (5**1)
 assert nGlx(1, x) == 3
 assert nGlx(2, x) == 2
 assert nGlx(3, x) == 1
@@ -209,8 +228,11 @@ def l(x):
     return Eps(x, pred)
 
 assert l(2*3*5) == 3        # the length of [1, 1, 1] is 3    
-assert l(1) == 0            # 1 encodes the empty series
+assert l(1) == 0            # 1 encodes the empty series*
 assert l(2**5) == 1         # 2**5 is the singleton list [5]
+
+# * This isn't quite right. It also encodes (2**0)*(3**0)*(etc).
+#   Lists containing zeros aren't super well-defined in this system.
 
 # ========================================================
 
@@ -235,7 +257,9 @@ def make_join_predicate(x, y):
 @and_godel_said
 def join(x, y):
 
-    """ 8. join(x, y) corresponds to "joining together" two finite series of numbers. """
+    """ 8. join(x, y) corresponds to "joining together"
+        two finite series of numbers.
+    """
 
     max = Pr(l(x) + l(y))**(x+y)
 
@@ -282,6 +306,18 @@ assert nGlx(1, c) == 2      # c[1] == 2
 assert nGlx(2, c) == 3      # c[2] == 3
 
 
+##################
+### Commentary ###
+##################
+#
+# Running the file to this point takes
+# ~25s with no caching,
+# ~0.3s with caching.
+#
+# Once we hit the function below this,
+# we realize we're desperately in need
+# of a better implementation.
+
 # ========================================================
 
 @and_godel_said
@@ -295,84 +331,9 @@ def E(x):
     return join(R11x, R13)  # compute "(R(11) * x) * R(13)"
 
 
-# Now, the simplest test of above function might
-# be something like this:
-#
-# a = R(2)                      # a = [2]
-# Ea = E(a)                     # Ea = '(' + str(a) + ')', conceptually
-# assert l(E(a)) == l(a) + 2    # the extra 2 comes from the '(' and ')'
-#
-# If we run that test, however, we find that it hangs.
-#
-# Let's step through the code.
-
-"""
->>> a = R(2)
->>> a
-4
-
->>> # E(4) == ?
->>> # The function hangs if we call it,
->>> # so let's step through it manually.
-
->>> lp = godel['(']         # written 11, in Gödel's paper
->>> rp = godel[')']         # written 13, in Gödel's paper
-
->>> lp
-11
-
->>> rp
-13
-
->>> R11 = R(lp)             # compute the left-most term
->>> R13 = R(rp)             # compute the right-most term
-
->>> R11
-2048
-
->>> R13
-8192
-
->>> R11x = join(R11, x)     # this is where the function hangs
-"""
-
-################################
-### Time: Still computing... ###
-###                          ###
-### Even with all the caches ###
-################################
-
-
-### ======================================================================
-###
-### NEXT TIME: Get the stuff below working!
-###
-### It seems semantically correct, just crazy slow.
-###
-### The problem is *clearly* the brute-force implementation of `join`
-###
-### At this point, we have to decouple from Gödel's paper,
-### and implement something better...
-###
-###
-###
-### ======================================================================
-
-# Next Step: Get this working
-#
-# a = R(2)                      # a = [2]
-# Ea = E(a)                     # Ea = '(' + str(a) + ')', conceptually
-# assert l(E(a)) == l(a) + 2    # the extra 2 comes from the '(' and ')'
-
-
-#a = R(2)                    # a = [2]
-#b = R(3)                    # b = [3]
-#c = join(a, b)              # c = join(a,b)
-#Ec = E(c)                   # Ec = '(' + str(c) + ')', conceptually
-#assert l(E(c)) == l(c) + 2  # the extra 2 comes from the '(' and ')'
-
-#assert nGlx(1, E_ab) == godel['(']
-#assert nGlx(2, E_ab) == nGlx(1, ab)
-#assert nGlx(3, E_ab) == nGlx(2, ab)
-#assert nGlx(4, E_ab) == 13
+try:
+    a = E(2)
+except KeyboardInterrupt:
+    for k, l in CALLS.items():
+        print(f"{k}: total calls = {len(l)}, total time = {sum(l)})")
 
