@@ -347,10 +347,9 @@ def E(x):
     return join(R11x, R13)  # compute "(R(11) * x) * R(13)"
 
 
-if False:
-    try:
-        a = E(2)
-    except KeyboardInterrupt:
-        for k, l in CALLS.items():
-            print(f"{k}: total calls = {len(l)}, total time = {sum(l)})")
+try:
+    a = E(2)
+finally:
+    for k, l in CALLS.items():
+        print(f"{k}: total calls = {len(l)}, total time = {sum(l)})")
 
