@@ -6,6 +6,8 @@ The 46 formulas in Gödel's 1931 paper.
 
 # ========================================================
 
+import time
+
 CALLS = {}
 
 def and_godel_said(f):
@@ -26,10 +28,9 @@ def and_godel_said(f):
         if args in memory:
             return memory[args]
 
-        argv = ', '.join(map(str, args))
-        print(f"{f.__name__}({argv})")
+        #argv = ', '.join(map(str, args))
+        #print(f"{f.__name__}({argv})")
 
-        import time
         before = time.time()
         result = f(*args)
         after = time.time()
